@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+@import "./tw-animate.css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
 
@@ -99,8 +99,8 @@
     --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
+    --border: oklch(0.269 0 0);
+    --input: oklch(0.269 0 0);
     --ring: oklch(0.556 0 0);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
@@ -123,6 +123,8 @@
     }
   body {
     @apply bg-background text-foreground;
+    margin: 0;
+    overflow: hidden;
     }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
@@ -130,4 +132,27 @@
   html {
     @apply font-sans;
     }
+}
+
+/* Ubuntu Desktop utilities */
+.desktop-wallpaper {
+  background-image: url("/wallpaper.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.window-shell {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.window-shell:hover {
+  box-shadow:
+    0 12px 48px rgba(0, 0, 0, 0.6),
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
