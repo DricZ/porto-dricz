@@ -36,5 +36,8 @@ cleanup() { rm -f "$PROJECT_ROOT/prisma/.env"; }
 trap cleanup EXIT
 echo "DATABASE_URL=\"$DB_URL\"" > "$PROJECT_ROOT/prisma/.env"
 
+# Also export it so child processes get it directly
+export DATABASE_URL="$DB_URL"
+
 cd "$PROJECT_ROOT"
 "$@"
