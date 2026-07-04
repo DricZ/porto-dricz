@@ -15,6 +15,7 @@ import {
   Trash2,
   Pencil,
   Menu,
+  FileArchive,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -46,6 +47,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { useSession } from "@/lib/auth-client"
+import { DESKTOP_ICONS } from "@/components/desktop/DesktopArea"
+import { useWindowActions } from "@/stores/useWindowStore"
 
 interface Project {
   id: string
@@ -57,7 +60,7 @@ interface Project {
   link?: string | null
 }
 
-import { getProjects, createProject, deleteProject } from "@/app/actions/cms"
+import { getProjects, createProject, deleteProject, getFiles, createFile, deleteFile } from "@/app/actions/cms"
 
 type Directory = "Home" | "Portofolio" | "Desktop" | "Documents" | "Downloads" | "Music" | "Pictures" | "Videos"
 
@@ -82,6 +85,16 @@ const SIDEBAR_ITEMS = [
   { id: "Videos", label: "Videos", icon: Video },
 ] as const
 
+const getFileIcon = (type: string) => {
+  if (!type) return <FileText size={48} className="mb-3 text-white/80 drop-shadow-md" strokeWidth={1} />
+  if (type.startsWith("video/")) return <Video size={48} className="mb-3 text-emerald-400 drop-shadow-md" strokeWidth={1} />
+  if (type.startsWith("audio/")) return <Music size={48} className="mb-3 text-purple-400 drop-shadow-md" strokeWidth={1} />
+  if (type === "application/pdf") return <FileText size={48} className="mb-3 text-red-400 drop-shadow-md" strokeWidth={1} />
+  if (type.includes("zip") || type.includes("tar") || type.includes("compressed") || type.includes("rar")) return <FileArchive size={48} className="mb-3 text-yellow-400 drop-shadow-md" strokeWidth={1} />
+  if (type.includes("json") || type.includes("javascript") || type.includes("typescript") || type.includes("html") || type.includes("css") || type.includes("xml") || type.includes("csv")) return <FileCode2 size={48} className="mb-3 text-blue-400 drop-shadow-md" strokeWidth={1} />
+  return <FileText size={48} className="mb-3 text-white/80 drop-shadow-md" strokeWidth={1} />
+}
+
 const STATUS_STYLES: Record<Project["status"], string> = {
   completed: "!bg-emerald-500/10 !text-emerald-400 !border-emerald-500/20",
   "in-progress": "!bg-blue-500/10 !text-blue-400 !border-blue-500/20",
@@ -94,11 +107,14 @@ export const FilesApp = memo(function FilesApp({ window }: { window?: WindowStat
   )
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
+  const [files, setFiles] = useState<any[]>([])
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false)
 
   const { data: session } = useSession()
 
   const [isProjectOpen, setIsProjectOpen] = useState(false)
   const [projectForm, setProjectForm] = useState({ name: "", description: "", techStack: "", status: "completed", year: "", link: "" })
+  const { openWindow } = useWindowActions()
 
   useEffect(() => {
     let mounted = true
@@ -109,6 +125,24 @@ export const FilesApp = memo(function FilesApp({ window }: { window?: WindowStat
       mounted = false
     }
   }, [])
+
+  useEffect(() => {
+    if (currentDir !== "Home" && currentDir !== "Portofolio" && currentDir !== "Desktop") {
+      let mounted = true
+      setIsLoadingFiles(true)
+      getFiles(currentDir).then((data) => {
+        if (mounted) {
+          setFiles(data)
+          setIsLoadingFiles(false)
+        }
+      })
+      return () => {
+        mounted = false
+      }
+    } else {
+      setFiles([])
+    }
+  }, [currentDir])
 
   const handleSelectProject = useCallback((project: Project) => {
     setSelectedProject(project)
@@ -143,7 +177,12 @@ export const FilesApp = memo(function FilesApp({ window }: { window?: WindowStat
       setSelectedProject(null)
     }
   }
-
+  const handleDeleteFile = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm("Are you sure you want to delete this file?")) return
+    await deleteFile(id)
+    setFiles(prev => prev.filter(x => x.id !== id))
+  }
   const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -155,13 +194,24 @@ export const FilesApp = memo(function FilesApp({ window }: { window?: WindowStat
         body: JSON.stringify({ filename: file.name, contentType: file.type })
       })
       
-      const { presignedUrl } = await res.json()
+      const { presignedUrl, key, url } = await res.json()
       if (presignedUrl) {
         await fetch(presignedUrl, {
           method: "PUT",
           body: file,
           headers: { "Content-Type": file.type }
         })
+
+        const newFile = await createFile({
+          name: file.name,
+          path: currentDir,
+          url,
+          size: file.size,
+          type: file.type,
+        })
+        
+        setFiles(prev => [newFile, ...prev])
+
         alert("File uploaded successfully!")
       } else {
         alert("Failed to get upload URL.")
@@ -261,22 +311,59 @@ export const FilesApp = memo(function FilesApp({ window }: { window?: WindowStat
         {/* Directory Content */}
         <ScrollArea className="flex-1 p-4">
           {currentDir === "Home" && (
-            <div className="grid grid-cols-4 gap-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(100px,1fr))] sm:gap-4">
               {HOME_FOLDERS.map((folder) => (
                 <button
                   key={folder.id}
                   onClick={() => {
-                    if (window.innerWidth < 640) {
+                    if (typeof globalThis.window !== "undefined" && globalThis.innerWidth < 640) {
                       handleNavigate(folder.id)
                     }
                   }}
                   onDoubleClick={() => handleNavigate(folder.id)}
-                  className="flex flex-col items-center gap-2 rounded-lg p-3 hover:bg-white/10 focus:bg-blue-500/20 focus:outline-none transition-colors group"
+                  className="flex flex-col items-center gap-3 rounded-xl p-3 hover:bg-white/10 focus:bg-blue-500/20 focus:outline-none transition-colors group"
                 >
-                  <folder.icon size={48} className={cn("transition-transform group-hover:scale-105 group-active:scale-95", folder.color)} strokeWidth={1.5} />
-                  <span className="text-xs text-white/90 truncate w-full text-center">{folder.label}</span>
+                  <div className={cn("flex items-center justify-center p-1 transition-transform group-hover:scale-105 group-active:scale-95", folder.color)}>
+                    <folder.icon 
+                      size={46} 
+                      strokeWidth={1.5} 
+                      fill="currentColor"
+                      style={{ fillOpacity: 0.2 }}
+                    />
+                  </div>
+                  <span className="text-xs text-white/90 text-center line-clamp-2 break-words leading-tight px-1">{folder.label}</span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {currentDir === "Desktop" && (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(100px,1fr))] sm:gap-4">
+              {DESKTOP_ICONS.map((item) => {
+                const initialData = item.id === "portfolios" ? { directory: "Portofolio" } : undefined
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      if (typeof globalThis.window !== "undefined" && globalThis.innerWidth < 640) {
+                        openWindow(item.appId, initialData)
+                      }
+                    }}
+                    onDoubleClick={() => openWindow(item.appId, initialData)}
+                    className="flex flex-col items-center gap-3 rounded-xl p-3 hover:bg-white/10 focus:bg-blue-500/20 focus:outline-none transition-colors group"
+                  >
+                    <div className="flex items-center justify-center p-1 transition-transform group-hover:scale-105 group-active:scale-95 text-blue-400">
+                      <item.icon 
+                        size={46} 
+                        strokeWidth={1.5} 
+                        fill="currentColor"
+                        style={{ fillOpacity: 0.2 }}
+                      />
+                    </div>
+                    <span className="text-xs text-white/90 text-center line-clamp-2 break-words leading-tight px-1">{item.label}</span>
+                  </button>
+                )
+              })}
             </div>
           )}
 
@@ -338,15 +425,15 @@ export const FilesApp = memo(function FilesApp({ window }: { window?: WindowStat
               )}
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
                 {projects.map((project) => (
-                  <button
+                  <div
                     key={project.id}
                     onClick={() => {
-                      if (window.innerWidth < 640) {
+                      if (typeof globalThis.window !== "undefined" && globalThis.innerWidth < 640) {
                         handleSelectProject(project)
                       }
                     }}
                     onDoubleClick={() => handleSelectProject(project)}
-                    className="group relative flex h-32 flex-col justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:bg-white/10 focus:bg-blue-500/20 focus:outline-none"
+                    className="group relative flex h-32 flex-col justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:bg-white/10 focus:bg-blue-500/20 focus:outline-none cursor-pointer"
                   >
                     {session && (
                       <Button
@@ -360,7 +447,13 @@ export const FilesApp = memo(function FilesApp({ window }: { window?: WindowStat
                     )}
                     <div>
                       <div className="flex items-start justify-between">
-                        <Folder className="text-blue-400" size={24} />
+                        <Folder 
+                          className="text-blue-400" 
+                          size={28} 
+                          strokeWidth={1.5}
+                          fill="currentColor"
+                          style={{ fillOpacity: 0.2 }}
+                        />
                         <Badge variant="outline" className={cn(STATUS_STYLES[project.status as keyof typeof STATUS_STYLES], "text-[10px]", session && "mr-8")}>
                           {project.status.replace("-", " ")}
                         </Badge>
@@ -372,20 +465,74 @@ export const FilesApp = memo(function FilesApp({ window }: { window?: WindowStat
                         {project.description}
                       </p>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </>
           )}
 
-          {currentDir !== "Home" && currentDir !== "Portofolio" && (
-            <div className="flex h-full min-h-[300px] flex-col items-center justify-center text-center text-white/50">
-              <Folder size={64} className="mb-4 text-white/20" strokeWidth={1} />
-              <h3 className="text-lg font-medium text-white/70">Folder is empty</h3>
-              <p className="mt-1 text-sm">
-                You can add files to <span className="font-semibold text-white/90">{currentDir}</span> later.
-              </p>
-            </div>
+          {currentDir !== "Home" && currentDir !== "Portofolio" && currentDir !== "Desktop" && (
+            <>
+              {isLoadingFiles ? (
+                <div className="flex h-full min-h-[300px] flex-col items-center justify-center text-center text-white/50">
+                  <p className="mt-1 text-sm">Loading files...</p>
+                </div>
+              ) : files.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4 p-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 animate-in fade-in slide-in-from-bottom-4">
+                  {files.map((file) => (
+                    <div
+                      key={file.id}
+                      className="group relative flex cursor-pointer flex-col items-center rounded-lg p-4 transition-all hover:bg-white/10"
+                      onClick={() => {
+                        if (file.url) {
+                          if (file.type.startsWith("video/") || file.type.startsWith("audio/")) {
+                            openWindow("mediaplayer", { fileUrl: file.url, fileName: file.name, fileType: file.type })
+                          } else if (file.type === "application/pdf") {
+                            openWindow("pdfviewer", { fileUrl: file.url, fileName: file.name, fileType: file.type })
+                          } else {
+                            globalThis.open(file.url, "_blank")
+                          }
+                        }
+                      }}
+                    >
+                      {session && (
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute right-2 top-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                          onClick={(e) => handleDeleteFile(file.id, e)}
+                        >
+                          <Trash2 className="size-3" />
+                        </Button>
+                      )}
+                      
+                      {file.type.startsWith("image/") ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img 
+                          src={file.url} 
+                          alt={file.name} 
+                          className="mb-3 h-12 w-12 object-cover rounded shadow-md"
+                        />
+                      ) : (
+                        getFileIcon(file.type)
+                      )}
+                      
+                      <span className="text-center text-xs font-medium text-white/90 line-clamp-2 max-w-full break-all">
+                        {file.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex h-full min-h-[300px] flex-col items-center justify-center text-center text-white/50">
+                  <Folder size={64} className="mb-4 text-white/20" strokeWidth={1} />
+                  <h3 className="text-lg font-medium text-white/70">Folder is empty</h3>
+                  <p className="mt-1 text-sm">
+                    You can add files to <span className="font-semibold text-white/90">{currentDir}</span> later.
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
           {selectedProject && (

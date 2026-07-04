@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getSettings } from "@/app/actions/cms"
 
 interface LockScreenProps {
@@ -10,6 +10,7 @@ interface LockScreenProps {
 export function LockScreen({ onUnlock }: LockScreenProps) {
   const [now, setNow] = useState(() => new Date())
   const [name, setName] = useState<string>("Loading...")
+  const [avatar, setAvatar] = useState<string>("")
   const [isUnlocking, setIsUnlocking] = useState(false)
 
   useEffect(() => {
@@ -21,8 +22,10 @@ export function LockScreen({ onUnlock }: LockScreenProps) {
     let mounted = true
     getSettings().then((settings) => {
       if (!mounted) return
-      const nameSetting = settings.find(s => s.key === "name")
-      setName(nameSetting?.value || "Dricz")
+      const nameSetting = (settings as any).name
+      const avatarSetting = (settings as any).avatar
+      setName(nameSetting || "Dricz")
+      setAvatar(avatarSetting || "")
     }).catch(err => {
       console.error(err)
       if (mounted) setName("Dricz")
@@ -87,6 +90,7 @@ export function LockScreen({ onUnlock }: LockScreenProps) {
 
       <div className="flex flex-col items-center gap-3 sm:gap-4 mt-20 sm:mt-28">
         <Avatar className="size-24 sm:size-32 border-4 border-white/20 shadow-2xl">
+          {avatar && <AvatarImage src={avatar} alt={name} />}
           <AvatarFallback className="bg-orange-500 text-4xl sm:text-5xl font-bold text-white">
             {name === "Loading..." ? "..." : name.substring(0, 2).toUpperCase()}
           </AvatarFallback>

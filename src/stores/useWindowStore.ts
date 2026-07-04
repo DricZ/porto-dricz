@@ -10,15 +10,19 @@ const APP_TITLES: Record<AppId, string> = {
   chrome: "Google Chrome",
   calculator: "Calculator",
   mediaplayer: "Media Player",
+  pdfviewer: "Document Viewer",
+  contact: "Contact Me",
 }
 
 const DEFAULT_SIZES: Record<AppId, { width: number; height: number }> = {
   terminal: { width: 720, height: 480 },
   files: { width: 800, height: 520 },
-  settings: { width: 760, height: 500 },
-  chrome: { width: 1024, height: 768 },
-  calculator: { width: 320, height: 480 },
-  mediaplayer: { width: 400, height: 600 },
+  settings: { width: 600, height: 400 },
+  chrome: { width: 900, height: 600 },
+  calculator: { width: 300, height: 400 },
+  mediaplayer: { width: 700, height: 500 },
+  pdfviewer: { width: 800, height: 600 },
+  contact: { width: 450, height: 500 },
 }
 
 function generateId(): string {

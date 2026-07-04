@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useState, useEffect } from "react"
 import {
   Briefcase,
   Calculator,
@@ -8,11 +8,13 @@ import {
   Music,
   Settings,
   TerminalSquare,
+  Mail,
 } from "lucide-react"
 import { DesktopIcon } from "@/components/desktop/DesktopIcon"
 import { WindowManager } from "@/components/desktop/WindowManager"
 import { useWindowActions } from "@/stores/useWindowStore"
 import { useSession } from "@/lib/auth-client"
+import { getSettings } from "@/app/actions/cms"
 import type { AppId } from "@/types"
 import {
   ContextMenu,
@@ -22,13 +24,14 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 
-const DESKTOP_ICONS = [
+export const DESKTOP_ICONS = [
   { id: "files", label: "Files", icon: FolderOpen, appId: "files" as AppId },
   { id: "portfolios", label: "My Portofolios", icon: Briefcase, appId: "files" as AppId },
   { id: "terminal", label: "Terminal", icon: TerminalSquare, appId: "terminal" as AppId },
   { id: "chrome", label: "Chrome", icon: Globe, appId: "chrome" as AppId },
   { id: "calculator", label: "Calculator", icon: Calculator, appId: "calculator" as AppId },
   { id: "mediaplayer", label: "Music", icon: Music, appId: "mediaplayer" as AppId },
+  { id: "contact", label: "Contact", icon: Mail, appId: "contact" as AppId },
   { id: "settings", label: "Settings", icon: Settings, appId: "settings" as AppId },
 ] as const
 
@@ -36,6 +39,29 @@ export function DesktopArea() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const { openWindow } = useWindowActions()
   const { data: session } = useSession()
+  const [wallpaper, setWallpaper] = useState<string>("/wallpaper.png")
+
+  useEffect(() => {
+    let mounted = true
+    getSettings().then((settings) => {
+      if (!mounted) return
+      const wp = (settings as any).wallpaper
+      if (wp) {
+        setWallpaper(wp)
+      }
+    }).catch(err => console.error(err))
+    
+    const handleWallpaperChange = (e: Event) => {
+      const customEvent = e as CustomEvent<string>
+      setWallpaper(customEvent.detail)
+    }
+    
+    window.addEventListener("wallpaperChanged", handleWallpaperChange)
+    return () => {
+      mounted = false
+      window.removeEventListener("wallpaperChanged", handleWallpaperChange)
+    }
+  }, [])
 
   const handleSelect = useCallback((id: string) => {
     setSelectedId(id)
@@ -58,6 +84,7 @@ export function DesktopArea() {
         <main
           id="desktop-area"
           className="desktop-wallpaper relative flex-1 overflow-hidden"
+          style={{ backgroundImage: `url("${wallpaper}")` }}
           onClick={handleDesktopClick}
         >
           {/* Desktop icons grid */}

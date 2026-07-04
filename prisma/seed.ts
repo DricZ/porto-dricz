@@ -4,16 +4,13 @@ import { PrismaPg } from "@prisma/adapter-pg"
 import dotenv from "dotenv"
 
 dotenv.config()
-const url = process.env.DATABASE_URL
-  ? process.env.DATABASE_URL
-      .replace("${DB_USER}", process.env.DB_USER || "postgres")
-      .replace("${DB_PASS}", process.env.DB_PASS || "")
-      .replace("${DB_HOST}", process.env.DB_HOST || "localhost")
-      .replace("${DB_PORT}", process.env.DB_PORT || "5432")
-      .replace("${DB_NAME}", process.env.DB_NAME || "porto_db")
-  : "postgresql://postgres:Jancok21@localhost:5432/porto_db?schema=public";
-
-const pool = new Pool({ connectionString: url })
+const pool = new Pool({
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASS || "",
+  host: process.env.DB_HOST || "localhost",
+  port: parseInt(process.env.DB_PORT || "5432"),
+  database: process.env.DB_NAME || "porto_db",
+})
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 

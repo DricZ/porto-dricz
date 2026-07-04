@@ -32,7 +32,7 @@ export function QuickSettings() {
       </PopoverTrigger>
       
       <PopoverContent 
-        className="w-[calc(100vw-1rem)] sm:w-80 rounded-2xl bg-[#1e1e1e]/90 backdrop-blur-xl border-white/10 shadow-2xl p-3 sm:p-4 mr-2 text-white" 
+        className="w-[calc(100vw-1rem)] sm:w-80 rounded-2xl bg-[#1e1e1e]/90 backdrop-blur-xl border-white/10 shadow-2xl p-3 sm:p-4 mr-2 text-white dark" 
         align="end" 
         sideOffset={8}
       >
@@ -65,42 +65,42 @@ export function QuickSettings() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-2 gap-3">
-            <button className="flex items-center gap-3 rounded-full bg-blue-500/20 px-4 py-2 transition-colors hover:bg-blue-500/30">
-              <div className="rounded-full bg-blue-500 p-1.5">
+            <button className="flex items-center gap-3 rounded-full bg-blue-500/20 px-3 sm:px-4 py-2 transition-colors hover:bg-blue-500/30 overflow-hidden w-full">
+              <div className="shrink-0 rounded-full bg-blue-500 p-1.5 flex items-center justify-center">
                 <Wifi size={16} className="text-white" />
               </div>
-              <div className="flex flex-col items-start">
-                <span className="text-sm font-medium">Wi-Fi</span>
-                <span className="text-xs text-white/50">Dricz_5G</span>
+              <div className="flex flex-col items-start overflow-hidden min-w-0 flex-1">
+                <span className="text-sm font-medium truncate w-full text-left">Wi-Fi</span>
+                <span className="text-xs text-blue-200/80 truncate w-full text-left">Dricz_5G</span>
               </div>
             </button>
-            <button className="flex items-center gap-3 rounded-full bg-white/5 px-4 py-2 transition-colors hover:bg-white/10">
-              <div className="rounded-full bg-white/10 p-1.5">
+            <button className="flex items-center gap-3 rounded-full bg-white/5 px-3 sm:px-4 py-2 transition-colors hover:bg-white/10 overflow-hidden w-full">
+              <div className="shrink-0 rounded-full bg-white/10 p-1.5 flex items-center justify-center">
                 <Bluetooth size={16} className="text-white/70" />
               </div>
-              <div className="flex flex-col items-start">
-                <span className="text-sm font-medium">Bluetooth</span>
-                <span className="text-xs text-white/50">Off</span>
+              <div className="flex flex-col items-start overflow-hidden min-w-0 flex-1">
+                <span className="text-sm font-medium truncate w-full text-left">Bluetooth</span>
+                <span className="text-xs text-white/50 truncate w-full text-left">Off</span>
               </div>
             </button>
             <button 
               onClick={() => setIsDark(!isDark)}
-              className="flex items-center gap-3 rounded-full bg-white/5 px-4 py-2 transition-colors hover:bg-white/10"
+              className={`flex items-center gap-3 rounded-full px-3 sm:px-4 py-2 transition-colors overflow-hidden w-full ${isDark ? 'bg-blue-500/20 hover:bg-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}
             >
-              <div className="rounded-full bg-white/10 p-1.5">
-                {isDark ? <Moon size={16} className="text-white/70" /> : <Sun size={16} className="text-white/70" />}
+              <div className={`shrink-0 rounded-full p-1.5 flex items-center justify-center ${isDark ? 'bg-blue-500' : 'bg-white/10'}`}>
+                {isDark ? <Moon size={16} className="text-white" /> : <Sun size={16} className="text-white/70" />}
               </div>
-              <div className="flex flex-col items-start">
-                <span className="text-sm font-medium">Dark Style</span>
-                <span className="text-xs text-white/50">{isDark ? "On" : "Off"}</span>
+              <div className="flex flex-col items-start overflow-hidden min-w-0 flex-1">
+                <span className="text-sm font-medium truncate w-full text-left">Dark Style</span>
+                <span className={`text-xs truncate w-full text-left ${isDark ? 'text-blue-200/80' : 'text-white/50'}`}>{isDark ? "On" : "Off"}</span>
               </div>
             </button>
-            <button className="flex items-center gap-3 rounded-full bg-white/5 px-4 py-2 transition-colors hover:bg-white/10">
-              <div className="rounded-full bg-white/10 p-1.5">
+            <button className="flex items-center gap-3 rounded-full bg-white/5 px-3 sm:px-4 py-2 transition-colors hover:bg-white/10 overflow-hidden w-full">
+              <div className="shrink-0 rounded-full bg-white/10 p-1.5 flex items-center justify-center">
                 <Settings size={16} className="text-white/70" />
               </div>
-              <div className="flex flex-col items-start">
-                <span className="text-sm font-medium">Settings</span>
+              <div className="flex flex-col items-start justify-center overflow-hidden min-w-0 flex-1 h-full">
+                <span className="text-sm font-medium truncate w-full text-left">Settings</span>
               </div>
             </button>
           </div>

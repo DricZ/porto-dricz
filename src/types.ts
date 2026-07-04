@@ -1,4 +1,4 @@
-export type AppId = "terminal" | "files" | "settings" | "chrome" | "calculator" | "mediaplayer"
+export type AppId = "terminal" | "files" | "settings" | "chrome" | "calculator" | "mediaplayer" | "pdfviewer" | "contact"
 
 export interface WindowState {
   id: string

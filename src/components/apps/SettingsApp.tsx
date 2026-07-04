@@ -14,11 +14,15 @@ import {
   Plus,
   Trash2,
   Menu,
+  Monitor,
+  ImageIcon,
+  MessageSquare,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -52,7 +56,8 @@ import {
   createContact,
   deleteContact,
 } from "@/app/actions/cms"
-import type { Setting, Experience, Skill, Contact } from "@prisma/client"
+import type { Setting, Experience, Skill, Contact, ContactMessage } from "@prisma/client"
+import { format } from "date-fns"
 
 export const SettingsApp = memo(function SettingsApp() {
   const { data: session, isPending } = useSession()
@@ -62,6 +67,12 @@ export const SettingsApp = memo(function SettingsApp() {
   const [experiences, setExperiences] = useState<Experience[]>([])
   const [skills, setSkills] = useState<Skill[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
+  
+  // Messages states
+  const [messages, setMessages] = useState<ContactMessage[]>([])
+  const [messagesPage, setMessagesPage] = useState(1)
+  const [messagesTotalPages, setMessagesTotalPages] = useState(1)
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
 
   // Auth states
   const [email, setEmail] = useState("")
@@ -71,6 +82,9 @@ export const SettingsApp = memo(function SettingsApp() {
   const [newPassword, setNewPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isUpdatingSecurity, setIsUpdatingSecurity] = useState(false)
+  const [isUploadingWallpaper, setIsUploadingWallpaper] = useState(false)
+  const [isUploadingResume, setIsUploadingResume] = useState(false)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
   // Dialog & Form states
   const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -97,10 +111,7 @@ export const SettingsApp = memo(function SettingsApp() {
     ]).then(([settingsData, experiencesData, skillsData, contactsData]) => {
       if (!mounted) return
       
-      const settingsMap: Record<string, string> = {}
-      settingsData.forEach((s: any) => {
-        settingsMap[s.key] = s.value
-      })
+      const settingsMap: Record<string, string> = (settingsData as any) || {}
       setSettings(settingsMap)
       setProfileForm({
         name: settingsMap.name || "",
@@ -123,6 +134,27 @@ export const SettingsApp = memo(function SettingsApp() {
     }
   }, [])
 
+  useEffect(() => {
+    if (session?.user) {
+      const fetchMessages = async () => {
+        setIsLoadingMessages(true)
+        try {
+          const res = await fetch(`/api/contact?page=${messagesPage}`)
+          if (res.ok) {
+            const data = await res.json()
+            setMessages(data.messages)
+            setMessagesTotalPages(data.pagination.totalPages)
+          }
+        } catch (err) {
+          console.error("Failed to fetch messages:", err)
+        } finally {
+          setIsLoadingMessages(false)
+        }
+      }
+      fetchMessages()
+    }
+  }, [session, messagesPage])
+
   // Handlers
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -132,6 +164,106 @@ export const SettingsApp = memo(function SettingsApp() {
     await updateSetting("bio", profileForm.bio)
     setSettings(prev => ({ ...prev, ...profileForm }))
     setIsProfileOpen(false)
+  }
+
+  const handleUploadWallpaper = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingWallpaper(true)
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, contentType: file.type })
+      })
+      
+      const { presignedUrl, url } = await res.json()
+      if (presignedUrl) {
+        await fetch(presignedUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type }
+        })
+        await updateSetting("wallpaper", url)
+        setSettings(prev => ({ ...prev, wallpaper: url }))
+        window.dispatchEvent(new CustomEvent("wallpaperChanged", { detail: url }))
+        alert("Wallpaper updated successfully!")
+      } else {
+        alert("Failed to get upload URL.")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Upload failed.")
+    } finally {
+      setIsUploadingWallpaper(false)
+    }
+  }
+
+  const handleUploadResume = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingResume(true)
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, contentType: file.type })
+      })
+      
+      const { presignedUrl, url } = await res.json()
+      if (presignedUrl) {
+        await fetch(presignedUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type }
+        })
+        await updateSetting("resume", url)
+        setSettings(prev => ({ ...prev, resume: url }))
+        alert("Resume updated successfully!")
+      } else {
+        alert("Failed to get upload URL.")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Upload failed.")
+    } finally {
+      setIsUploadingResume(false)
+    }
+  }
+
+  const handleUploadAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingAvatar(true)
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, contentType: file.type })
+      })
+      
+      const { presignedUrl, url } = await res.json()
+      if (presignedUrl) {
+        await fetch(presignedUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type }
+        })
+        await updateSetting("avatar", url)
+        setSettings(prev => ({ ...prev, avatar: url }))
+        alert("Avatar updated successfully!")
+      } else {
+        alert("Failed to get upload URL.")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Upload failed.")
+    } finally {
+      setIsUploadingAvatar(false)
+    }
   }
 
   const handleAddExperience = async (e: React.FormEvent) => {
@@ -248,6 +380,15 @@ export const SettingsApp = memo(function SettingsApp() {
               <User className="size-4" />
               Profile
             </TabsTrigger>
+            {session && (
+              <TabsTrigger
+                value="appearance"
+                className="justify-start gap-2 rounded-md !border-transparent px-3 py-1.5 text-sm font-medium text-gray-400 !shadow-none ring-0 after:hidden hover:!bg-white/10 hover:!text-white focus-visible:ring-0 data-[state=active]:!bg-blue-500/20 data-[state=active]:!text-blue-400"
+              >
+                <Monitor className="size-4" />
+                Appearance
+              </TabsTrigger>
+            )}
             <TabsTrigger
               value="experience"
               className="justify-start gap-2 rounded-md !border-transparent px-3 py-1.5 text-sm font-medium text-gray-400 !shadow-none ring-0 after:hidden hover:!bg-white/10 hover:!text-white focus-visible:ring-0 data-[state=active]:!bg-blue-500/20 data-[state=active]:!text-blue-400"
@@ -269,6 +410,15 @@ export const SettingsApp = memo(function SettingsApp() {
               <Mail className="size-4" />
               Contact
             </TabsTrigger>
+            {session && (
+              <TabsTrigger
+                value="messages"
+                className="justify-start gap-2 rounded-md !border-transparent px-3 py-1.5 text-sm font-medium text-gray-400 !shadow-none ring-0 after:hidden hover:!bg-white/10 hover:!text-white focus-visible:ring-0 data-[state=active]:!bg-blue-500/20 data-[state=active]:!text-blue-400"
+              >
+                <MessageSquare className="size-4" />
+                Messages
+              </TabsTrigger>
+            )}
             <TabsTrigger
               value="admin"
               className="justify-start gap-2 rounded-md !border-transparent px-3 py-1.5 text-sm font-medium text-gray-400 !shadow-none ring-0 after:hidden hover:!bg-white/10 hover:!text-white focus-visible:ring-0 data-[state=active]:!bg-blue-500/20 data-[state=active]:!text-blue-400"
@@ -312,6 +462,17 @@ export const SettingsApp = memo(function SettingsApp() {
                       Profile
                     </TabsTrigger>
                   </SheetTrigger>
+                  {session && (
+                    <SheetTrigger asChild>
+                      <TabsTrigger
+                        value="appearance"
+                        className="justify-start gap-2 rounded-md !border-transparent px-3 py-2 text-sm font-medium text-gray-400 !shadow-none ring-0 after:hidden hover:!bg-white/10 hover:!text-white focus-visible:ring-0 data-[state=active]:!bg-blue-500/20 data-[state=active]:!text-blue-400 w-full"
+                      >
+                        <Monitor className="size-4" />
+                        Appearance
+                      </TabsTrigger>
+                    </SheetTrigger>
+                  )}
                   <SheetTrigger asChild>
                     <TabsTrigger
                       value="experience"
@@ -339,6 +500,17 @@ export const SettingsApp = memo(function SettingsApp() {
                       Contact
                     </TabsTrigger>
                   </SheetTrigger>
+                  {session && (
+                    <SheetTrigger asChild>
+                      <TabsTrigger
+                        value="messages"
+                        className="justify-start gap-2 rounded-md !border-transparent px-3 py-2 text-sm font-medium text-gray-400 !shadow-none ring-0 after:hidden hover:!bg-white/10 hover:!text-white focus-visible:ring-0 data-[state=active]:!bg-blue-500/20 data-[state=active]:!text-blue-400 w-full"
+                      >
+                        <MessageSquare className="size-4" />
+                        Messages
+                      </TabsTrigger>
+                    </SheetTrigger>
+                  )}
                   <SheetTrigger asChild>
                     <TabsTrigger
                       value="admin"
@@ -365,8 +537,8 @@ export const SettingsApp = memo(function SettingsApp() {
             <div className="text-sm font-medium">Settings</div>
           </div>
           
-          <ScrollArea className="flex-1">
-          <TabsContent value="profile" className="m-0 p-3 sm:p-6">
+          <div className="flex-1 overflow-y-auto min-h-0">
+          <TabsContent value="profile" className="m-0 p-3 sm:p-6 outline-none">
             <div className="flex flex-col items-center gap-4 relative">
               {session && (
                 <div className="absolute right-0 top-0">
@@ -397,6 +569,32 @@ export const SettingsApp = memo(function SettingsApp() {
                           <Label>Bio</Label>
                           <Textarea rows={4} value={profileForm.bio} onChange={e => setProfileForm({...profileForm, bio: e.target.value})} />
                         </div>
+                        <div className="space-y-2">
+                          <Label>Upload Avatar</Label>
+                          <Input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={handleUploadAvatar}
+                            disabled={isUploadingAvatar}
+                          />
+                          {isUploadingAvatar && <p className="text-xs text-white/50">Uploading...</p>}
+                          {settings.avatar && !isUploadingAvatar && (
+                            <p className="text-xs text-green-500">Avatar uploaded. You can upload a new one to replace it.</p>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Upload CV/Resume</Label>
+                          <Input 
+                            type="file" 
+                            accept="application/pdf,.doc,.docx"
+                            onChange={handleUploadResume}
+                            disabled={isUploadingResume}
+                          />
+                          {isUploadingResume && <p className="text-xs text-white/50">Uploading...</p>}
+                          {settings.resume && !isUploadingResume && (
+                            <p className="text-xs text-green-500">CV uploaded. You can upload a new one to replace it.</p>
+                          )}
+                        </div>
                         <Button type="submit" className="w-full">Save Changes</Button>
                       </form>
                     </DialogContent>
@@ -405,6 +603,7 @@ export const SettingsApp = memo(function SettingsApp() {
               )}
               
               <Avatar className="size-20">
+                {settings.avatar && <AvatarImage src={settings.avatar} alt="Avatar" />}
                 <AvatarFallback className="bg-orange-500 text-2xl font-bold text-white">
                   {isLoadingData ? "..." : (settings.name ? settings.name.substring(0, 2).toUpperCase() : "DR")}
                 </AvatarFallback>
@@ -425,17 +624,63 @@ export const SettingsApp = memo(function SettingsApp() {
               <p className="max-w-md text-center text-sm leading-relaxed text-white/70 whitespace-pre-wrap">
                 {isLoadingData ? "Loading..." : (settings.bio || "Set your bio")}
               </p>
-              <Button 
-                variant="outline" 
-                className="gap-2 border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
-              >
-                <Download data-icon="inline-start font-black" />
-                Download Resume
-              </Button>
+              {settings.resume && (
+                <Button 
+                  variant="outline" 
+                  className="gap-2 border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                  asChild
+                >
+                  <a href={settings.resume} target="_blank" rel="noreferrer">
+                    <Download data-icon="inline-start font-black" />
+                    Download Resume
+                  </a>
+                </Button>
+              )}
             </div>
           </TabsContent>
 
-          <TabsContent value="experience" className="m-0 p-3 sm:p-6">
+          {session && (
+            <TabsContent value="appearance" className="m-0 p-3 sm:p-6 outline-none">
+            <h2 className="mb-4 text-lg font-semibold">Appearance</h2>
+            <div className="flex max-w-sm flex-col gap-4">
+              <h3 className="text-sm font-medium text-white/70">Desktop Wallpaper</h3>
+              
+              <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-white/20 bg-black/50">
+                <img 
+                  src={settings.wallpaper || "/wallpaper.png"} 
+                  alt="Current Wallpaper" 
+                  className="h-full w-full object-cover"
+                />
+              </div>
+
+              {session ? (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="wallpaper-upload">
+                    <Button variant="outline" className="w-full gap-2 text-black" asChild disabled={isUploadingWallpaper}>
+                      <span>
+                        <ImageIcon className="size-4" /> 
+                        {isUploadingWallpaper ? "Uploading..." : "Upload New Wallpaper"}
+                      </span>
+                    </Button>
+                  </label>
+                  <input 
+                    id="wallpaper-upload" 
+                    type="file" 
+                    accept="image/*,video/*" 
+                    className="hidden" 
+                    onChange={handleUploadWallpaper} 
+                    disabled={isUploadingWallpaper}
+                  />
+                  <p className="text-xs text-white/50 text-center mt-1">
+                    Supports images and videos. Uploaded files will be stored in R2.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </TabsContent>
+          )}
+
+          <TabsContent value="experience" className="m-0 p-3 sm:p-6 outline-none">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Experience</h2>
               {session && (
@@ -507,7 +752,7 @@ export const SettingsApp = memo(function SettingsApp() {
             </div>
           </TabsContent>
 
-          <TabsContent value="skills" className="m-0 p-3 sm:p-6">
+          <TabsContent value="skills" className="m-0 p-3 sm:p-6 outline-none">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Skills</h2>
               {session && (
@@ -567,7 +812,7 @@ export const SettingsApp = memo(function SettingsApp() {
             </div>
           </TabsContent>
 
-          <TabsContent value="contact" className="m-0 p-3 sm:p-6">
+          <TabsContent value="contact" className="m-0 p-3 sm:p-6 outline-none">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Contact</h2>
               {session && (
@@ -631,7 +876,63 @@ export const SettingsApp = memo(function SettingsApp() {
             </div>
           </TabsContent>
 
-          <TabsContent value="admin" className="m-0 p-3 sm:p-6">
+          {session && (
+            <TabsContent value="messages" className="m-0 p-3 sm:p-6 outline-none flex flex-col h-full">
+              <h2 className="mb-4 text-lg font-semibold">Contact Messages</h2>
+              
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4 min-h-0">
+                {isLoadingMessages ? (
+                  <p className="text-white/50 text-sm">Loading messages...</p>
+                ) : messages.length === 0 ? (
+                  <p className="text-white/50 text-sm">No messages found.</p>
+                ) : (
+                  messages.map(msg => (
+                    <div key={msg.id} className="rounded-lg border border-white/10 bg-[#2a2a2a] p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-medium text-sm">{msg.name}</h3>
+                          <a href={`mailto:${msg.email}`} className="text-xs text-blue-400 hover:underline">{msg.email}</a>
+                        </div>
+                        <span className="text-xs text-white/40">
+                          {format(new Date(msg.createdAt), "MMM d, yyyy HH:mm")}
+                        </span>
+                      </div>
+                      <Separator className="bg-white/10 my-3" />
+                      <p className="text-sm text-white/80 whitespace-pre-wrap">{msg.message}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {messagesTotalPages > 1 && (
+                <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-black"
+                    disabled={messagesPage <= 1 || isLoadingMessages}
+                    onClick={() => setMessagesPage(p => p - 1)}
+                  >
+                    <ChevronLeft className="size-4" /> Previous
+                  </Button>
+                  <span className="text-sm text-white/50">
+                    Page {messagesPage} of {messagesTotalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-black"
+                    disabled={messagesPage >= messagesTotalPages || isLoadingMessages}
+                    onClick={() => setMessagesPage(p => p + 1)}
+                  >
+                    Next <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+          )}
+
+          <TabsContent value="admin" className="m-0 p-3 sm:p-6 outline-none">
             <h2 className="mb-4 text-lg font-semibold">Admin Login</h2>
             {session ? (
               <div className="flex max-w-sm flex-col gap-4">
@@ -740,7 +1041,7 @@ export const SettingsApp = memo(function SettingsApp() {
               </div>
             </TabsContent>
           )}
-        </ScrollArea>
+          </div>
         </div>
       </Tabs>
     </div>

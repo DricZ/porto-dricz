@@ -9,14 +9,18 @@ const SettingsApp = lazy(() => import("@/components/apps/SettingsApp").then((m) 
 const ChromeApp = lazy(() => import("@/components/apps/ChromeApp").then((m) => ({ default: m.ChromeApp })))
 const CalculatorApp = lazy(() => import("@/components/apps/CalculatorApp").then((m) => ({ default: m.CalculatorApp })))
 const MediaPlayerApp = lazy(() => import("@/components/apps/MediaPlayerApp").then((m) => ({ default: m.MediaPlayerApp })))
+const PdfViewerApp = lazy(() => import("@/components/apps/PdfViewerApp").then((m) => ({ default: m.PdfViewerApp })))
+const ContactApp = lazy(() => import("@/components/apps/ContactApp").then((m) => ({ default: m.ContactApp })))
 
-const APP_COMPONENTS: Record<AppId, React.LazyExoticComponent<React.ComponentType>> = {
+const APP_COMPONENTS: Record<AppId, React.LazyExoticComponent<React.ComponentType<any>>> = {
   terminal: TerminalApp,
   files: FilesApp,
   settings: SettingsApp,
   chrome: ChromeApp,
   calculator: CalculatorApp,
   mediaplayer: MediaPlayerApp,
+  pdfviewer: PdfViewerApp,
+  contact: ContactApp,
 }
 
 function WindowFallback() {

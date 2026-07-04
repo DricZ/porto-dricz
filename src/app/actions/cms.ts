@@ -182,17 +182,48 @@ export async function deleteContact(id: string) {
 }
 
 // -----------------------------------------------------------------------------
+// Settings
+// -----------------------------------------------------------------------------
 export async function getSettings() {
-  return await prisma.setting.findMany()
+  const settings = await prisma.setting.findMany()
+  return settings.reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {} as Record<string, string>)
 }
 
 export async function updateSetting(key: string, value: string) {
   await requireAuth()
-  const setting = await prisma.setting.upsert({
+  const result = await prisma.setting.upsert({
     where: { key },
     update: { value },
-    create: { key, value }
+    create: { key, value },
   })
   revalidatePath("/")
-  return setting
+  return result
+}
+
+// -----------------------------------------------------------------------------
+// Files
+// -----------------------------------------------------------------------------
+export async function getFiles(path: string) {
+  return await prisma.file.findMany({
+    where: { path },
+    orderBy: { createdAt: "desc" },
+  })
+}
+
+export async function createFile(data: { name: string; path: string; url: string; size: number; type: string }) {
+  await requireAuth()
+  const result = await prisma.file.create({
+    data,
+  })
+  revalidatePath("/")
+  return result
+}
+
+export async function deleteFile(id: string) {
+  await requireAuth()
+  const result = await prisma.file.delete({
+    where: { id },
+  })
+  revalidatePath("/")
+  return result
 }
