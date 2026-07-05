@@ -67,6 +67,7 @@ import {
   getFiles,
   createFile,
   deleteFile,
+  updateProject,
 } from "@/app/actions/cms"
 
 type Directory =
@@ -213,6 +214,7 @@ export const FilesApp = memo(function FilesApp({
   const { data: session } = useSession()
 
   const [isProjectOpen, setIsProjectOpen] = useState(false)
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [projectForm, setProjectForm] = useState({
     name: "",
     description: "",
@@ -266,19 +268,40 @@ export const FilesApp = memo(function FilesApp({
 
   const handleAddProject = async (e: React.FormEvent) => {
     e.preventDefault()
-    const newProject = await createProject({
-      name: projectForm.name,
-      description: projectForm.description,
-      techStack: projectForm.techStack
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
-      status: projectForm.status,
-      year: projectForm.year,
-      link: projectForm.link || undefined,
-    })
-    setProjects((prev) => [...prev, newProject as Project])
+    if (editingProject) {
+      const updated = await updateProject(editingProject.id, {
+        name: projectForm.name,
+        description: projectForm.description,
+        techStack: projectForm.techStack
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        status: projectForm.status,
+        year: projectForm.year,
+        link: projectForm.link || undefined,
+      })
+      setProjects((prev) =>
+        prev.map((p) => (p.id === editingProject.id ? (updated as Project) : p))
+      )
+      if (selectedProject?.id === editingProject.id) {
+        setSelectedProject(updated as Project)
+      }
+    } else {
+      const newProject = await createProject({
+        name: projectForm.name,
+        description: projectForm.description,
+        techStack: projectForm.techStack
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        status: projectForm.status,
+        year: projectForm.year,
+        link: projectForm.link || undefined,
+      })
+      setProjects((prev) => [...prev, newProject as Project])
+    }
     setIsProjectOpen(false)
+    setEditingProject(null)
     setProjectForm({
       name: "",
       description: "",
@@ -287,6 +310,20 @@ export const FilesApp = memo(function FilesApp({
       year: "",
       link: "",
     })
+  }
+
+  const handleEditProject = (project: Project, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingProject(project)
+    setProjectForm({
+      name: project.name,
+      description: project.description,
+      techStack: project.techStack.join(", "),
+      status: project.status,
+      year: project.year,
+      link: project.link || "",
+    })
+    setIsProjectOpen(true)
   }
 
   const handleDeleteProject = async (id: string, e: React.MouseEvent) => {
@@ -439,7 +476,7 @@ export const FilesApp = memo(function FilesApp({
           </div>
 
           {/* Directory Content */}
-          <ScrollArea className="flex-1 p-4">
+          <ScrollArea className="flex-1 p-4 h-full min-h-0">
             {currentDir === "Home" && (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(100px,1fr))] sm:gap-4">
                 {HOME_FOLDERS.map((folder) => (
@@ -528,13 +565,24 @@ export const FilesApp = memo(function FilesApp({
                           variant="outline"
                           size="sm"
                           className="gap-2 text-black"
+                          onClick={() => {
+                            setEditingProject(null)
+                            setProjectForm({
+                              name: "",
+                              description: "",
+                              techStack: "",
+                              status: "completed",
+                              year: "",
+                              link: "",
+                            })
+                          }}
                         >
                           <Plus className="size-4" /> New Project
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="text-black sm:max-w-[425px]">
                         <DialogHeader>
-                          <DialogTitle>Add Project</DialogTitle>
+                          <DialogTitle>{editingProject ? "Edit Project" : "Add Project"}</DialogTitle>
                         </DialogHeader>
                         <form
                           onSubmit={handleAddProject}
@@ -628,7 +676,7 @@ export const FilesApp = memo(function FilesApp({
                             />
                           </div>
                           <Button type="submit" className="w-full">
-                            Create Project
+                            {editingProject ? "Save Changes" : "Create Project"}
                           </Button>
                         </form>
                       </DialogContent>
@@ -651,14 +699,24 @@ export const FilesApp = memo(function FilesApp({
                       className="group relative flex h-32 cursor-pointer flex-col justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-colors hover:bg-white/10 focus:bg-blue-500/20 focus:outline-none"
                     >
                       {session && (
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 z-10 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
-                          onClick={(e) => handleDeleteProject(project.id, e)}
-                        >
-                          <Trash2 className="size-3" />
-                        </Button>
+                        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => handleEditProject(project, e)}
+                          >
+                            <Pencil className="size-3" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => handleDeleteProject(project.id, e)}
+                          >
+                            <Trash2 className="size-3" />
+                          </Button>
+                        </div>
                       )}
                       <div>
                         <div className="flex items-start justify-between">

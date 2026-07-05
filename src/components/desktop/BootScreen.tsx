@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react"
+import { motion } from "framer-motion"
+import { Power } from "lucide-react"
 
 const BOOT_SEQUENCE = [
   "================================================================================",
-  "                              Welcome to Audrico Portfolio OS                               ",
+  "                        Welcome to Audrico Portfolio OS                         ",
   "                    Professional Desktop Environment v1.0.0                     ",
   "================================================================================",
   " ",
@@ -109,7 +111,12 @@ export function BootScreen({
   return (
     <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden bg-black p-4 font-mono text-sm text-green-500">
       {isWaiting ? (
-        <div className="flex max-w-sm animate-in flex-col items-center gap-8 rounded-2xl border border-neutral-700/50 bg-neutral-900/80 p-8 text-center shadow-2xl backdrop-blur-md duration-500 fade-in zoom-in">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="flex max-w-sm flex-col items-center gap-12 rounded-3xl border border-white/5 bg-black/40 p-10 text-center shadow-2xl backdrop-blur-2xl"
+        >
           <div>
             <h2 className="mb-2 text-2xl font-bold tracking-tight text-white">
               Audrico Portfolio OS
@@ -119,36 +126,61 @@ export function BootScreen({
             </p>
           </div>
 
-          <button
+          <motion.button
             onClick={() => setIsWaiting(false)}
-            className="group relative flex h-20 w-20 items-center justify-center rounded-full bg-neutral-800/80 transition-all duration-300 hover:bg-neutral-700 active:scale-95 cursor-pointer outline-none"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="group relative flex h-24 w-24 cursor-pointer items-center justify-center rounded-full bg-blue-500/5 outline-none"
           >
-            {/* Pulsing ring animation */}
-            <div className="absolute inset-0 rounded-full animate-ping opacity-30 bg-blue-500 duration-1000" />
-            
-            {/* Outer glow that brightens on hover */}
-            <div className="absolute inset-0 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(59,130,246,0.6)]" />
-            
-            {/* Inner border */}
-            <div className="absolute inset-0 rounded-full border border-neutral-600/50 group-hover:border-blue-500/50 transition-colors duration-300" />
+            {/* Outer animated rings */}
+            <motion.div
+              animate={{
+                scale: [1, 1.25, 1],
+                opacity: [0.3, 0.1, 0.3],
+              }}
+              transition={{
+                duration: 2.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="absolute inset-0 rounded-full border border-blue-500/30"
+            />
+            <motion.div
+              animate={{
+                scale: [1, 1.5, 1],
+                opacity: [0.15, 0, 0.15],
+              }}
+              transition={{
+                duration: 2.5,
+                delay: 0.4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="absolute inset-0 rounded-full border border-blue-500/20"
+            />
+            <motion.div
+              animate={{
+                scale: [1, 1.75, 1],
+                opacity: [0.05, 0, 0.05],
+              }}
+              transition={{
+                duration: 2.5,
+                delay: 0.8,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="absolute inset-0 rounded-full border border-blue-500/10"
+            />
 
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-blue-400 transition-transform duration-300 group-hover:scale-110"
-            >
-              <path d="M12 2v10" />
-              <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
-            </svg>
-          </button>
-        </div>
+            {/* Inner button surface */}
+            <div className="absolute inset-2 flex items-center justify-center rounded-full bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all duration-300 group-hover:bg-blue-500/30 group-hover:shadow-[0_0_30px_rgba(59,130,246,0.6)]">
+              <Power
+                className="size-8 text-blue-400 transition-colors duration-300 group-hover:text-blue-300"
+                strokeWidth={2.5}
+              />
+            </div>
+          </motion.button>
+        </motion.div>
       ) : (
         <div className="w-full flex-1 overflow-y-auto text-left leading-tight whitespace-pre-wrap">
           {lines.map((line, i) => (

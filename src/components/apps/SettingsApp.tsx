@@ -48,12 +48,15 @@ import {
   updateSetting,
   getExperiences,
   createExperience,
+  updateExperience,
   deleteExperience,
   getSkills,
   createSkill,
+  updateSkill,
   deleteSkill,
   getContacts,
   createContact,
+  updateContact,
   deleteContact,
 } from "@/app/actions/cms"
 import type { Setting, Experience, Skill, Contact, ContactMessage } from "@prisma/client"
@@ -91,12 +94,15 @@ export const SettingsApp = memo(function SettingsApp() {
   const [profileForm, setProfileForm] = useState({ name: "", title: "", location: "", bio: "" })
   
   const [isExpOpen, setIsExpOpen] = useState(false)
+  const [editingExp, setEditingExp] = useState<Experience | null>(null)
   const [expForm, setExpForm] = useState({ role: "", company: "", period: "", description: "" })
 
   const [isSkillOpen, setIsSkillOpen] = useState(false)
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null)
   const [skillForm, setSkillForm] = useState({ category: "", name: "" })
 
   const [isContactOpen, setIsContactOpen] = useState(false)
+  const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [contactForm, setContactForm] = useState({ label: "", href: "", iconName: "Link" })
 
   const [isLoadingData, setIsLoadingData] = useState(true)
@@ -268,12 +274,24 @@ export const SettingsApp = memo(function SettingsApp() {
 
   const handleAddExperience = async (e: React.FormEvent) => {
     e.preventDefault()
-    const newExp = await createExperience({ ...expForm })
-    setExperiences(prev => [...prev, newExp as any])
+    if (editingExp) {
+      const updated = await updateExperience(editingExp.id, { ...expForm })
+      setExperiences(prev => prev.map(x => x.id === editingExp.id ? (updated as any) : x))
+    } else {
+      const newExp = await createExperience({ ...expForm })
+      setExperiences(prev => [...prev, newExp as any])
+    }
     setIsExpOpen(false)
+    setEditingExp(null)
     setExpForm({ role: "", company: "", period: "", description: "" })
   }
   
+  const handleEditExperience = (exp: Experience) => {
+    setEditingExp(exp)
+    setExpForm({ role: exp.role, company: exp.company, period: exp.period, description: exp.description })
+    setIsExpOpen(true)
+  }
+
   const handleDeleteExperience = async (id: string) => {
     if (!confirm("Are you sure?")) return
     await deleteExperience(id)
@@ -282,12 +300,24 @@ export const SettingsApp = memo(function SettingsApp() {
 
   const handleAddSkill = async (e: React.FormEvent) => {
     e.preventDefault()
-    const newSkill = await createSkill({ ...skillForm })
-    setSkills(prev => [...prev, newSkill as any])
+    if (editingSkill) {
+      const updated = await updateSkill(editingSkill.id, { ...skillForm })
+      setSkills(prev => prev.map(x => x.id === editingSkill.id ? (updated as any) : x))
+    } else {
+      const newSkill = await createSkill({ ...skillForm })
+      setSkills(prev => [...prev, newSkill as any])
+    }
     setIsSkillOpen(false)
+    setEditingSkill(null)
     setSkillForm({ category: "", name: "" })
   }
   
+  const handleEditSkill = (skill: Skill) => {
+    setEditingSkill(skill)
+    setSkillForm({ category: skill.category, name: skill.name })
+    setIsSkillOpen(true)
+  }
+
   const handleDeleteSkill = async (id: string) => {
     if (!confirm("Are you sure?")) return
     await deleteSkill(id)
@@ -296,10 +326,22 @@ export const SettingsApp = memo(function SettingsApp() {
 
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault()
-    const newContact = await createContact({ ...contactForm })
-    setContacts(prev => [...prev, newContact as any])
+    if (editingContact) {
+      const updated = await updateContact(editingContact.id, { ...contactForm })
+      setContacts(prev => prev.map(x => x.id === editingContact.id ? (updated as any) : x))
+    } else {
+      const newContact = await createContact({ ...contactForm })
+      setContacts(prev => [...prev, newContact as any])
+    }
     setIsContactOpen(false)
+    setEditingContact(null)
     setContactForm({ label: "", href: "", iconName: "Link" })
+  }
+  
+  const handleEditContact = (contact: Contact) => {
+    setEditingContact(contact)
+    setContactForm({ label: contact.label, href: contact.href || "", iconName: contact.iconName })
+    setIsContactOpen(true)
   }
   
   const handleDeleteContact = async (id: string) => {
@@ -686,13 +728,16 @@ export const SettingsApp = memo(function SettingsApp() {
               {session && (
                 <Dialog open={isExpOpen} onOpenChange={setIsExpOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 text-black">
-                      <Plus className="size-4" /> Add Experience
+                    <Button variant="outline" size="sm" className="gap-2 text-black" onClick={() => {
+                      setEditingExp(null)
+                      setExpForm({ role: "", company: "", period: "", description: "" })
+                    }}>
+                      <Plus className="size-4" /> New Experience
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="text-black sm:max-w-[425px]">
                     <DialogHeader>
-                      <DialogTitle>Add Experience</DialogTitle>
+                      <DialogTitle>{editingExp ? "Edit Experience" : "Add Experience"}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleAddExperience} className="space-y-4 pt-4">
                       <div className="space-y-2">
@@ -711,7 +756,7 @@ export const SettingsApp = memo(function SettingsApp() {
                         <Label>Description</Label>
                         <Textarea required rows={4} value={expForm.description} onChange={e => setExpForm({...expForm, description: e.target.value})} />
                       </div>
-                      <Button type="submit" className="w-full">Add Experience</Button>
+                      <Button type="submit" className="w-full">{editingExp ? "Save Changes" : "Add Experience"}</Button>
                     </form>
                   </DialogContent>
                 </Dialog>
@@ -725,14 +770,24 @@ export const SettingsApp = memo(function SettingsApp() {
                   className="group relative rounded-lg border border-white/10 bg-[#2a2a2a] p-4"
                 >
                   {session && (
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute right-2 top-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleDeleteExperience(exp.id)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => handleEditExperience(exp)}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => handleDeleteExperience(exp.id)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
                   )}
                   <div className="flex items-start justify-between gap-2">
                     <div className="pr-8">
@@ -758,13 +813,16 @@ export const SettingsApp = memo(function SettingsApp() {
               {session && (
                 <Dialog open={isSkillOpen} onOpenChange={setIsSkillOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 text-black">
-                      <Plus className="size-4" /> Add Skill
+                    <Button variant="outline" size="sm" className="gap-2 text-black" onClick={() => {
+                      setEditingSkill(null)
+                      setSkillForm({ category: "", name: "" })
+                    }}>
+                      <Plus className="size-4" /> New Skill
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="text-black sm:max-w-[425px]">
                     <DialogHeader>
-                      <DialogTitle>Add Skill</DialogTitle>
+                      <DialogTitle>{editingSkill ? "Edit Skill" : "Add Skill"}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleAddSkill} className="space-y-4 pt-4">
                       <div className="space-y-2">
@@ -775,7 +833,7 @@ export const SettingsApp = memo(function SettingsApp() {
                         <Label>Skill Name</Label>
                         <Input required value={skillForm.name} onChange={e => setSkillForm({...skillForm, name: e.target.value})} placeholder="e.g. React" />
                       </div>
-                      <Button type="submit" className="w-full">Add Skill</Button>
+                      <Button type="submit" className="w-full">{editingSkill ? "Save Changes" : "Add Skill"}</Button>
                     </form>
                   </DialogContent>
                 </Dialog>
@@ -797,12 +855,20 @@ export const SettingsApp = memo(function SettingsApp() {
                       >
                         {skill.name}
                         {session && (
-                          <button 
-                            onClick={() => handleDeleteSkill(skill.id)}
-                            className="ml-2 rounded-full p-0.5 hover:bg-red-500 hover:text-white"
-                          >
-                            <Trash2 className="size-3" />
-                          </button>
+                          <div className="absolute right-0 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 p-0.5 rounded">
+                            <button 
+                              onClick={() => handleEditSkill(skill)}
+                              className="text-white hover:text-blue-400"
+                            >
+                              <Pencil className="size-3" />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteSkill(skill.id)}
+                              className="text-white hover:text-red-400"
+                            >
+                              <Trash2 className="size-3" />
+                            </button>
+                          </div>
                         )}
                       </Badge>
                     ))}
@@ -818,13 +884,16 @@ export const SettingsApp = memo(function SettingsApp() {
               {session && (
                 <Dialog open={isContactOpen} onOpenChange={setIsContactOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 text-black">
-                      <Plus className="size-4" /> Add Contact
+                    <Button variant="outline" size="sm" className="gap-2 text-black" onClick={() => {
+                      setEditingContact(null)
+                      setContactForm({ label: "", href: "", iconName: "Link" })
+                    }}>
+                      <Plus className="size-4" /> New Contact
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="text-black sm:max-w-[425px]">
                     <DialogHeader>
-                      <DialogTitle>Add Contact</DialogTitle>
+                      <DialogTitle>{editingContact ? "Edit Contact" : "Add Contact"}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleAddContact} className="space-y-4 pt-4">
                       <div className="space-y-2">
@@ -839,7 +908,7 @@ export const SettingsApp = memo(function SettingsApp() {
                         <Label>Icon Name</Label>
                         <Input value={contactForm.iconName} onChange={e => setContactForm({...contactForm, iconName: e.target.value})} placeholder="e.g. Link, Mail" />
                       </div>
-                      <Button type="submit" className="w-full">Add Contact</Button>
+                      <Button type="submit" className="w-full">{editingContact ? "Save Changes" : "Add Contact"}</Button>
                     </form>
                   </DialogContent>
                 </Dialog>
@@ -861,14 +930,24 @@ export const SettingsApp = memo(function SettingsApp() {
                       <span className="text-sm font-medium">{contact.label}</span>
                     </a>
                     {session && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-white/50 hover:bg-red-500 hover:text-white"
-                        onClick={() => handleDeleteContact(contact.id)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="h-8 w-8 text-black"
+                          onClick={() => handleEditContact(contact)}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-white/50 hover:bg-red-500 hover:text-white"
+                          onClick={() => handleDeleteContact(contact.id)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 )
