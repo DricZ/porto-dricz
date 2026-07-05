@@ -13,14 +13,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Name, email, and message are required" }, { status: 400 })
     }
 
-    // Rate Limiting using Redis (1 request per hour per IP)
+    // Rate Limiting using Redis (max 3 requests per hour per IP)
     const headersList = await headers()
     const ip = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || "unknown"
     const rateLimitKey = `rate_limit_contact:${ip}`
     
-    const hasSentRecently = await redis.get(rateLimitKey)
-    if (hasSentRecently) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 })
+    const requestCount = await redis.incr(rateLimitKey)
+    
+    if (requestCount === 1) {
+      await redis.expire(rateLimitKey, 3600)
+    }
+    
+    if (requestCount > 3) {
+      return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 })
     }
 
     // Save to Database
@@ -32,8 +37,6 @@ export async function POST(req: Request) {
       },
     })
 
-    // Set Rate Limit (1 hour = 3600 seconds)
-    await redis.setex(rateLimitKey, 3600, "true")
 
     // Queue Email Notification
     await emailQueue.add("send-contact-email", {
