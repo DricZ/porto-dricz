@@ -109,8 +109,29 @@ export function BootScreen({
   return (
     <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden bg-black p-4 font-mono text-sm text-green-500">
       {isWaiting ? (
-        <div className="flex max-w-sm animate-in flex-col items-center gap-6 rounded-2xl border border-neutral-700/50 bg-neutral-900/80 p-8 text-center shadow-2xl backdrop-blur-md duration-500 fade-in zoom-in">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-neutral-700/50 bg-neutral-800 shadow-inner">
+        <div className="flex max-w-sm animate-in flex-col items-center gap-8 rounded-2xl border border-neutral-700/50 bg-neutral-900/80 p-8 text-center shadow-2xl backdrop-blur-md duration-500 fade-in zoom-in">
+          <div>
+            <h2 className="mb-2 text-2xl font-bold tracking-tight text-white">
+              Audrico Portfolio OS
+            </h2>
+            <p className="text-sm text-neutral-400">
+              Professional Desktop Environment
+            </p>
+          </div>
+
+          <button
+            onClick={() => setIsWaiting(false)}
+            className="group relative flex h-20 w-20 items-center justify-center rounded-full bg-neutral-800/80 transition-all duration-300 hover:bg-neutral-700 active:scale-95 cursor-pointer outline-none"
+          >
+            {/* Pulsing ring animation */}
+            <div className="absolute inset-0 rounded-full animate-ping opacity-30 bg-blue-500 duration-1000" />
+            
+            {/* Outer glow that brightens on hover */}
+            <div className="absolute inset-0 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all duration-300 group-hover:shadow-[0_0_40px_rgba(59,130,246,0.6)]" />
+            
+            {/* Inner border */}
+            <div className="absolute inset-0 rounded-full border border-neutral-600/50 group-hover:border-blue-500/50 transition-colors duration-300" />
+
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="32"
@@ -121,25 +142,11 @@ export function BootScreen({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-blue-400"
+              className="text-blue-400 transition-transform duration-300 group-hover:scale-110"
             >
               <path d="M12 2v10" />
               <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
             </svg>
-          </div>
-          <div>
-            <h2 className="mb-2 text-2xl font-bold tracking-tight text-white">
-              Audrico Portfolio OS
-            </h2>
-            <p className="text-sm text-neutral-400">
-              Professional Desktop Environment
-            </p>
-          </div>
-          <button
-            onClick={() => setIsWaiting(false)}
-            className="w-full rounded-xl bg-blue-600 px-4 py-2.5 font-medium text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all hover:bg-blue-500 hover:shadow-[0_0_25px_rgba(37,99,235,0.5)] active:scale-95"
-          >
-            Start System
           </button>
         </div>
       ) : (
