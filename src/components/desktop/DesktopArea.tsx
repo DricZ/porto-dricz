@@ -26,13 +26,38 @@ import {
 
 export const DESKTOP_ICONS = [
   { id: "files", label: "Files", icon: FolderOpen, appId: "files" as AppId },
-  { id: "portfolios", label: "My Portofolios", icon: Briefcase, appId: "files" as AppId },
-  { id: "terminal", label: "Terminal", icon: TerminalSquare, appId: "terminal" as AppId },
+  {
+    id: "portfolios",
+    label: "My Portofolios",
+    icon: Briefcase,
+    appId: "files" as AppId,
+  },
+  {
+    id: "terminal",
+    label: "Terminal",
+    icon: TerminalSquare,
+    appId: "terminal" as AppId,
+  },
   { id: "chrome", label: "Chrome", icon: Globe, appId: "chrome" as AppId },
-  { id: "calculator", label: "Calculator", icon: Calculator, appId: "calculator" as AppId },
-  { id: "mediaplayer", label: "Music", icon: Music, appId: "mediaplayer" as AppId },
+  {
+    id: "calculator",
+    label: "Calculator",
+    icon: Calculator,
+    appId: "calculator" as AppId,
+  },
+  {
+    id: "mediaplayer",
+    label: "Music",
+    icon: Music,
+    appId: "mediaplayer" as AppId,
+  },
   { id: "contact", label: "Contact", icon: Mail, appId: "contact" as AppId },
-  { id: "settings", label: "Settings", icon: Settings, appId: "settings" as AppId },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: Settings,
+    appId: "settings" as AppId,
+  },
 ] as const
 
 export function DesktopArea() {
@@ -43,19 +68,21 @@ export function DesktopArea() {
 
   useEffect(() => {
     let mounted = true
-    getSettings().then((settings) => {
-      if (!mounted) return
-      const wp = (settings as any).wallpaper
-      if (wp) {
-        setWallpaper(wp)
-      }
-    }).catch(err => console.error(err))
-    
+    getSettings()
+      .then((settings) => {
+        if (!mounted) return
+        const wp = (settings as any).wallpaper
+        if (wp) {
+          setWallpaper(wp)
+        }
+      })
+      .catch((err) => console.error(err))
+
     const handleWallpaperChange = (e: Event) => {
       const customEvent = e as CustomEvent<string>
       setWallpaper(customEvent.detail)
     }
-    
+
     window.addEventListener("wallpaperChanged", handleWallpaperChange)
     return () => {
       mounted = false
@@ -71,7 +98,7 @@ export function DesktopArea() {
     (appId: AppId, initialData?: any) => {
       openWindow(appId, initialData)
     },
-    [openWindow],
+    [openWindow]
   )
 
   const handleDesktopClick = useCallback(() => {
@@ -89,11 +116,12 @@ export function DesktopArea() {
         >
           {/* Desktop icons grid */}
           <div
-            className="absolute left-2 right-2 top-2 sm:right-auto sm:left-4 sm:top-4 grid grid-cols-4 sm:grid-cols-1 gap-1 sm:gap-2 justify-items-center sm:justify-items-start"
+            className="absolute top-2 right-2 left-2 grid grid-cols-4 justify-items-center gap-1 sm:top-4 sm:right-auto sm:left-4 sm:grid-cols-1 sm:justify-items-start sm:gap-2"
             onClick={(e) => e.stopPropagation()}
           >
             {DESKTOP_ICONS.map(({ id, label, icon, appId }) => {
-              const initialData = id === "portfolios" ? { directory: "Portofolio" } : undefined
+              const initialData =
+                id === "portfolios" ? { directory: "Portfolio" } : undefined
               return (
                 <DesktopIcon
                   key={id}
@@ -113,28 +141,43 @@ export function DesktopArea() {
           <WindowManager />
         </main>
       </ContextMenuTrigger>
-      <ContextMenuContent className="w-64 bg-[#2b2b2b]/95 text-white/90 border-white/10 backdrop-blur-md shadow-2xl p-1 rounded-lg text-sm">
-        <ContextMenuItem className="hover:bg-white/10 focus:bg-white/10 focus:text-white cursor-default py-1.5 px-3 rounded-md transition-colors" onClick={() => openWindow("files")}>
+      <ContextMenuContent className="w-64 rounded-lg border-white/10 bg-[#2b2b2b]/95 p-1 text-sm text-white/90 shadow-2xl backdrop-blur-md">
+        <ContextMenuItem
+          className="cursor-default rounded-md px-3 py-1.5 transition-colors hover:bg-white/10 focus:bg-white/10 focus:text-white"
+          onClick={() => openWindow("files")}
+        >
           Show Desktop in Files
         </ContextMenuItem>
-        <ContextMenuItem className="hover:bg-white/10 focus:bg-white/10 focus:text-white cursor-default py-1.5 px-3 rounded-md transition-colors" onClick={() => openWindow("terminal")}>
+        <ContextMenuItem
+          className="cursor-default rounded-md px-3 py-1.5 transition-colors hover:bg-white/10 focus:bg-white/10 focus:text-white"
+          onClick={() => openWindow("terminal")}
+        >
           Open in Terminal
         </ContextMenuItem>
-        
+
         {session && (
           <>
-            <ContextMenuSeparator className="bg-white/10 my-1" />
-            <ContextMenuItem className="hover:bg-white/10 focus:bg-white/10 focus:text-white cursor-default py-1.5 px-3 rounded-md transition-colors" onClick={() => openWindow("settings")}>
+            <ContextMenuSeparator className="my-1 bg-white/10" />
+            <ContextMenuItem
+              className="cursor-default rounded-md px-3 py-1.5 transition-colors hover:bg-white/10 focus:bg-white/10 focus:text-white"
+              onClick={() => openWindow("settings")}
+            >
               Change Background...
             </ContextMenuItem>
-            <ContextMenuItem className="hover:bg-white/10 focus:bg-white/10 focus:text-white cursor-default py-1.5 px-3 rounded-md transition-colors" onClick={() => openWindow("settings")}>
+            <ContextMenuItem
+              className="cursor-default rounded-md px-3 py-1.5 transition-colors hover:bg-white/10 focus:bg-white/10 focus:text-white"
+              onClick={() => openWindow("settings")}
+            >
               Display Settings
             </ContextMenuItem>
           </>
         )}
 
-        <ContextMenuSeparator className="bg-white/10 my-1" />
-        <ContextMenuItem className="hover:bg-white/10 focus:bg-white/10 focus:text-white cursor-default py-1.5 px-3 rounded-md transition-colors" onClick={() => openWindow("settings")}>
+        <ContextMenuSeparator className="my-1 bg-white/10" />
+        <ContextMenuItem
+          className="cursor-default rounded-md px-3 py-1.5 transition-colors hover:bg-white/10 focus:bg-white/10 focus:text-white"
+          onClick={() => openWindow("settings")}
+        >
           Settings
         </ContextMenuItem>
       </ContextMenuContent>
