@@ -1,20 +1,9 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/auth"
 import { redis } from "@/lib/redis"
-import nodemailer from "nodemailer"
+import { emailQueue } from "@/lib/queue"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
-
-// SMTP Configuration
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "localhost",
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: process.env.SMTP_PORT === "465",
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
 
 export async function POST(req: Request) {
   try {
@@ -46,22 +35,13 @@ export async function POST(req: Request) {
     // Set Rate Limit (1 hour = 3600 seconds)
     await redis.setex(rateLimitKey, 3600, "true")
 
-    // Send Email Notification
-    const adminEmail = process.env.ADMIN_EMAIL
-    if (adminEmail && process.env.SMTP_USER) {
-      try {
-        await transporter.sendMail({
-          from: process.env.SMTP_FROM || `"Contact Form" <${process.env.SMTP_USER}>`,
-          to: adminEmail,
-          subject: `New Contact Message from ${name}`,
-          text: `You have received a new message from your portfolio contact form.\n\nName: ${name}\nEmail: ${email}\nMessage:\n${message}\n\nSubmitted at: ${contactMessage.createdAt}`,
-          html: `<p>You have received a new message from your portfolio contact form.</p><p><strong>Name:</strong> ${name}<br/><strong>Email:</strong> ${email}</p><p><strong>Message:</strong></p><p>${message}</p>`,
-        })
-      } catch (emailError) {
-        console.error("Failed to send email notification:", emailError)
-        // Proceed even if email fails
-      }
-    }
+    // Queue Email Notification
+    await emailQueue.add("send-contact-email", {
+      name,
+      email,
+      message,
+      createdAt: contactMessage.createdAt,
+    })
 
     // Invalidate Cache for all pagination pages
     const keys = await redis.keys("contact_messages_page_*")

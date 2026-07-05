@@ -1,0 +1,27 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            TARGET_DIR="/www/wwwroot/porto-dricz"
+            BRANCH_NAME="${{ github.ref_name }}"
+
+            # UBAH INI SESUAI REPOSITORY (laravel / laravel83 / vite / express)
+            PROJECT_TYPE="next"
+
+            # Panggil script dengan 3 argumen
+            sudo /usr/local/bin/deploy_app.sh "$TARGET_DIR" "$BRANCH_NAME" "$PROJECT_TYPE"

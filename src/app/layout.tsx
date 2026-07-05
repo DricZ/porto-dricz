@@ -12,36 +12,49 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  ),
   title: {
-    default: "Dricz | Fullstack Developer",
-    template: "%s | Dricz Portfolio",
+    default: "Audrico | Fullstack Developer",
+    template: "%s | Audrico Portfolio",
   },
-  description: "Interactive Ubuntu-style Portfolio of Dricz. Fullstack Developer specializing in React, Next.js, and modern web development.",
-  keywords: ["Dricz", "Fullstack Developer", "Portfolio", "Next.js", "React", "TypeScript", "Ubuntu Desktop Simulator"],
-  authors: [{ name: "Dricz", url: "https://github.com/DricZ" }],
-  creator: "Dricz",
+  description:
+    "Interactive Ubuntu-style Portfolio of Audrico. Fullstack Developer specializing in React, Next.js, and modern web development.",
+  keywords: [
+    "Audrico",
+    "Fullstack Developer",
+    "Portfolio",
+    "Next.js",
+    "React",
+    "TypeScript",
+    "Ubuntu Desktop Simulator",
+  ],
+  authors: [{ name: "Audrico", url: "https://github.com/Audrico" }],
+  creator: "Audrico",
   openGraph: {
     type: "website",
     locale: "id_ID",
     url: "/",
-    title: "Dricz | Fullstack Developer",
-    description: "Interactive Ubuntu-style Portfolio of Dricz. Explore my projects, skills, and experience in a unique desktop environment.",
-    siteName: "Dricz Portfolio",
+    title: "Audrico | Fullstack Developer",
+    description:
+      "Interactive Ubuntu-style Portfolio of Audrico. Explore my projects, skills, and experience in a unique desktop environment.",
+    siteName: "Audrico Portfolio",
     images: [
       {
         url: "/og-image.png", // Akan fallback jika file tidak ada
         width: 1200,
         height: 630,
-        alt: "Dricz Portfolio",
+        alt: "Audrico Portfolio",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Dricz | Fullstack Developer",
-    description: "Interactive Ubuntu-style Portfolio of Dricz. Explore my projects and skills.",
-    creator: "@dricz",
+    title: "Audrico | Fullstack Developer",
+    description:
+      "Interactive Ubuntu-style Portfolio of Audrico. Explore my projects and skills.",
+    creator: "@Audrico",
     images: ["/twitter-image.png"],
   },
   robots: {
@@ -71,18 +84,21 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Person",
-              name: "Dricz",
-              url: process.env.NEXT_PUBLIC_APP_URL || "https://dricz.com",
+              name: "Audrico",
+              url: process.env.NEXT_PUBLIC_APP_URL || "https://Audrico.com",
               jobTitle: "Fullstack Developer",
               sameAs: [
-                "https://github.com/DricZ",
+                "https://github.com/Audrico",
                 // Tambahkan URL LinkedIn / sosmed lainnya di sini jika ada
               ],
             }),
           }}
         />
       </head>
-      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
+      <body
+        className={`${inter.className} antialiased`}
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>
