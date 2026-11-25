@@ -1,13 +1,8 @@
 require("dotenv").config();
+const { composeDatabaseUrl } = require("./scripts/db-config.cjs");
 
-// Construct DATABASE_URL from .env variables
-const DB_USER = encodeURIComponent(process.env.DB_USER || "postgres");
-const DB_PASS = encodeURIComponent(process.env.DB_PASS || "");
-const DB_HOST = process.env.DB_HOST || "localhost";
-const DB_PORT = process.env.DB_PORT || "5432";
-const DB_NAME = process.env.DB_NAME || "postgres";
-
-const DATABASE_URL = `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public`;
+// Construct DATABASE_URL with multi-host failover and DB_OPTIONS support
+const DATABASE_URL = composeDatabaseUrl(process.env, { forPrisma: true });
 
 
 module.exports = {

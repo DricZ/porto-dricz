@@ -1,27 +1,18 @@
 #!/bin/bash
 # Compose DATABASE_URL from DB_* vars, write to prisma/.env for Prisma CLI
+# Supports multi-host failover (e.g. DB_HOST=172.16.30.4,10.9.0.2) and DB_OPTIONS (e.g. --target_session_attrs=read-write)
 # Usage: ./scripts/with-db-url.sh bunx prisma migrate dev
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 ENV_FILE="$PROJECT_ROOT/.env"
 
-# Compose URL using bun (handles special chars in password safely)
-DB_URL=$(bun -e "
-  const fs = require('fs');
-  const lines = fs.readFileSync('$ENV_FILE', 'utf8').split('\n');
-  const env = {};
-  for (const line of lines) {
-    const m = line.match(/^([A-Z_]+)=[\"]?([^\"]*)[\"]?$/);
-    if (m) env[m[1]] = m[2];
-  }
-  const u = env.DB_USER;
-  const p = encodeURIComponent(env.DB_PASS || '');
-  const h = env.DB_HOST || 'localhost';
-  const port = env.DB_PORT || '5432';
-  const db = env.DB_NAME;
-  if (u && db) console.log('postgresql://' + u + ':' + p + '@' + h + ':' + port + '/' + db + '?schema=public');
-")
+# Compose URL using shared db-config helper (handles multi-host failover and DB_OPTIONS)
+DB_URL=$(cd "$PROJECT_ROOT" && bun -e "
+  import { composeDatabaseUrl } from './src/lib/db-config';
+  const url = composeDatabaseUrl(process.env, { forPrisma: true });
+  if (url) console.log(url);
+" 2>/dev/null | grep -E '^postgresql://' | tail -n 1)
 
 # Validate
 if [[ "$DB_URL" != postgresql://* ]]; then

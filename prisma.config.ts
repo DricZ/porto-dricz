@@ -2,17 +2,9 @@
 // npm install --save-dev prisma dotenv
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
+import { composeDatabaseUrl } from "./src/lib/db-config";
 
-const dbUser = process.env["DB_USER"] || "postgres";
-const dbPass = process.env["DB_PASS"] || "postgres";
-const dbHost = process.env["DB_HOST"] || "localhost";
-const dbPort = process.env["DB_PORT"] || "5432";
-const dbName = process.env["DB_NAME"] || "postgres";
-
-let dbUrl = process.env["DATABASE_URL"];
-if (!dbUrl || dbUrl.includes("${")) {
-  dbUrl = `postgresql://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}?schema=public`;
-}
+const dbUrl = composeDatabaseUrl(process.env, { forPrisma: true });
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
