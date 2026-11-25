@@ -96,6 +96,23 @@ describe("Database URL & Options Composition (Postgres HA & Laravel Compatibilit
     expect(url).toContain("target_session_attrs=read-write");
   });
 
+  it("harus memprioritaskan DB_* di atas DATABASE_URL yang basi (stale env)", () => {
+    const mockEnv = {
+      DATABASE_URL: "postgresql://postgres:old@localhost:5432/old_db?schema=public",
+      DB_HOST: "172.16.30.4,10.9.0.2",
+      DB_PORT: "5432",
+      DB_USER: "postgres",
+      DB_PASS: "newpass",
+      DB_NAME: "porto_aud_db",
+      DB_OPTIONS: '"--target_session_attrs=read-write"',
+    };
+
+    const url = composeDatabaseUrl(mockEnv, { forPrisma: true, probeTimeoutMs: 100 });
+    expect(url).not.toContain("@localhost:");
+    expect(url).toContain("/porto_aud_db");
+    expect(url).toContain("target_session_attrs=read-write");
+  });
+
   it("harus mengembalikan connectionString pada getDatabasePoolConfig", () => {
     const mockEnv = {
       DB_HOST: "localhost",
